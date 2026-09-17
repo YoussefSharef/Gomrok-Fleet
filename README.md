@@ -14,14 +14,12 @@ The UI is fully bilingual (English / Arabic, with RTL layout).
 - **`server/`** — Express + TypeScript API, Prisma ORM, Postgres database.
   PIN-based sign-in (bcrypt-hashed, JWT sessions) with four roles:
   Administrator, Operations, Maintenance engineer, Operator/supervisor.
-- **`api/`** — a single Vercel serverless function (`[...path].ts`) that
-  wraps the same Express app for a one-project Vercel deployment. Not used
-  when running `server/` as its own process (local dev, or hosting it on
-  Render/Railway/Fly instead — see below).
+  In production, the same Express process also serves the built client
+  (`client/dist`) directly — one process, one deploy, no separate static
+  host or serverless split.
 
 The app needs a real Postgres database, both locally and in production —
-Prisma's `provider` can't be switched at runtime, and a plain SQLite file
-doesn't survive Vercel's serverless filesystem anyway.
+Prisma's `provider` can't be switched at runtime.
 
 ## Getting started
 
@@ -48,46 +46,32 @@ Sign in as **Administrator** with PIN **1234**, then add your team under
 **People & access** — the people you add there fill the operator/engineer
 fields elsewhere in the app.
 
-## Deploying everything to Vercel
+## Deploying
 
-This is one Vercel project: the client is served as a static build, and
-`/api/*` is routed (via `vercel.json`) to a single serverless function that
-runs the same Express app. The only thing you need to do yourself is attach
-a database, since Claude Code can't provision cloud resources on your
-account:
+This deploys as one normal Node service — no serverless split, no separate
+static host. Any platform that runs "install, build, start" from a Node repo
+works: [Render](https://render.com), [Railway](https://railway.app),
+[Fly.io](https://fly.io), or your own server/VPS. Using the repo root as the
+project root:
 
-1. **Import the repo into Vercel** as a new project, with the **root
-   directory left as the repo root** (not `client/`) — `vercel.json` at the
-   root already sets the build command and output directory for you.
-2. **Add a Postgres database**: in the project's *Storage* tab, add
-   "Postgres" (or create one on [Neon](https://neon.tech) and add its
-   connection string manually). Either way, add an environment variable
-   named exactly **`DATABASE_URL`** with that connection string — if Vercel's
-   own Postgres storage gives you differently-named variables (`POSTGRES_URL`,
-   `POSTGRES_PRISMA_URL`, ...), copy one of those values into a `DATABASE_URL`
-   variable too, since that's the name Prisma is configured to read.
-3. **Add `JWT_SECRET`**: any long random string (e.g. `openssl rand -hex 32`).
-4. **Deploy.** The build command (`vercel.json`) runs `prisma migrate deploy`
-   and the seed script against that database automatically on every deploy,
-   so the first deploy already has the tables and the default Administrator
-   account — no separate setup step needed.
+- **Build command**: `npm install && npm run build`
+- **Start command**: `npm start`
+- **Environment variables**: `DATABASE_URL` (a real Postgres connection
+  string — e.g. from [Neon](https://neon.tech), which has a free tier), a
+  real random `JWT_SECRET` (e.g. `openssl rand -hex 32`), and `PORT` if your
+  platform doesn't set it for you.
 
-Sign in with **Administrator** / **1234** once it's live, then change that
-PIN (add a new Administrator under People & access, then remove the seeded
-one) before giving anyone else the URL.
+`npm start` runs `prisma migrate deploy` and the seed script before starting
+the server, so the very first deploy already has its tables and the default
+Administrator account (PIN 1234) with no separate setup step. Once it's
+live, sign in as Administrator, add your own admin account under **People &
+access**, and remove the seeded one before sharing the URL with anyone else.
 
-### Alternative: split deployment (client on Vercel, API elsewhere)
-
-If you'd rather run the API as a normal always-on process instead of a
-serverless function (e.g. to keep using SQLite, or for easier debugging),
-deploy `server/` by itself to [Render](https://render.com),
-[Railway](https://railway.app), or [Fly.io](https://fly.io) — root directory
-`server/`, build `npm install && npm run build`, start `npm start` — and set
-the client's `VITE_API_URL` environment variable to that API's URL (with the
-`/api` suffix). Set `CORS_ORIGIN` on the server to the client's Vercel URL.
-`client/src/api/client.ts` already supports this via `VITE_API_URL`; it's
-just unnecessary for the single-project setup above, where the client and
-API share an origin.
+If you specifically want the client and API on two different hosts instead
+(e.g. a static host for the client, the API somewhere else), set the
+client's `VITE_API_URL` environment variable to the API's URL (including the
+`/api` suffix) and the server's `CORS_ORIGIN` to the client's URL — both are
+already supported, just unnecessary for the single-service setup above.
 
 ## Notes
 
