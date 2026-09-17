@@ -1,5 +1,11 @@
 const TOKEN_KEY = 'gomrok-token';
 
+// In dev, Vite proxies /api to the local server (see vite.config.ts). In
+// production the client and API are typically deployed separately (e.g.
+// client on Vercel, server on Render/Railway/Fly), so VITE_API_URL must
+// point at the deployed API's base URL, e.g. https://your-api.onrender.com/api
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
 export function getToken(): string | null {
   try {
     return localStorage.getItem(TOKEN_KEY);
@@ -31,7 +37,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (options.body) headers['Content-Type'] = 'application/json';
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`/api${path}`, { ...options, headers });
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   if (res.status === 204) return undefined as T;
   const isJson = res.headers.get('content-type')?.includes('application/json');
   const body = isJson ? await res.json().catch(() => null) : null;
