@@ -340,6 +340,7 @@ export interface Dict {
     | 'wrong'
     | 'firstRun'
     | 'noAccounts'
+    | 'serverUnreachable'
     | 'signOut'
     | 'signedInAs',
     string
