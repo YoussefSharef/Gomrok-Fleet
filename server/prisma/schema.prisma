@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Person {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  role      String // admin | ops | engineer | operator
+  title     String   @default("")
+  pinHash   String
+  createdAt DateTime @default(now())
+}
+
+model Unit {
+  id             String   @id // human code, e.g. FL-01
+  type           String // FL | RT | TP | RS | RC | BT | CH
+  brand          String   @default("")
+  model          String   @default("")
+  serial         String   @default("")
+  zone           String   @default("")
+  hours          Int      @default(0)
+  lastMeter      Int      @default(0)
+  purchased      String? // ISO date
+  warranty       String? // ISO date
+  intervalHours  Int      @default(0)
+  intervalMonths Int      @default(0)
+  lastService    String?
+  nextService    String?
+  partner        String   @default("")
+  status         String   @default("operational")
+
+  // fault workflow — ops stage
+  complaint  String?
+  reporter   String?
+  channel    String?
+  impact     String?
+  reportedAt String?
+
+  // fault workflow — engineer stage / open work order
+  issue   String?
+  vendor  String?
+  sent    String?
+  eta     String?
+  wo      String?
+  cost    Int?
+  quoted  Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events ServiceEvent[]
+  parts  Part[]
+  quotes Quote[]
+
+  @@index([type])
+  @@index([status])
+}
+
+model ServiceEvent {
+  id     String @id @default(cuid())
+  unitId String
+  unit   Unit   @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  date   String
+  kind   String // preventive | breakdown | commission
+  title  String
+  desc   String @default("")
+  vendor String @default("-")
+  wo     String @default("-")
+  cost   Int?
+
+  @@index([unitId])
+}
+
+model Part {
+  id     String @id @default(cuid())
+  unitId String
+  unit   Unit   @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  name   String
+  qty    Int    @default(1)
+  cost   Int    @default(0)
+
+  @@index([unitId])
+}
+
+model Quote {
+  id      String  @id @default(cuid())
+  unitId  String
+  unit    Unit    @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  company String
+  scope   String
+  price   Int     @default(0)
+  lead    Int     @default(0)
+  note    String  @default("")
+  awarded Boolean @default(false)
+
+  @@index([unitId])
+}
+
+model Vendor {
+  id         String  @id @default(cuid())
+  name       String  @unique
+  covers     String  @default("")
+  contract   String  @default("Annual contract")
+  contact    String  @default("")
+  role       String  @default("")
+  phone      String  @default("")
+  email      String  @default("")
+  offersJson String  @default("[]") // JSON-encoded string[]
+  since      Int?
+  escalation String  @default("")
+  turnaround String?
+
+  createdAt DateTime @default(now())
+}
