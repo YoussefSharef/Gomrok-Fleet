@@ -35,6 +35,40 @@ Sign in as **Administrator** with PIN **1234**, then add your team under
 **People & access** — the people you add there fill the operator/engineer
 fields elsewhere in the app.
 
+## Deploying: client on Vercel, server elsewhere
+
+The server is a normal, always-on Node process with a SQLite file on disk —
+that doesn't fit Vercel's serverless model, so **only `client/` goes on
+Vercel**. Deploy `server/` to a host that runs a persistent process, such as
+[Render](https://render.com), [Railway](https://railway.app), or
+[Fly.io](https://fly.io).
+
+**1. Server** (example: Render "Web Service")
+- Root directory: `server/`
+- Build command: `npm install && npm run build`
+- Start command: `npm start` (runs `prisma migrate deploy` then starts the API)
+- Environment variables: `DATABASE_URL`, `JWT_SECRET` (a real random secret —
+  not the dev default), `CORS_ORIGIN` (your Vercel URL, once you have it,
+  comma-separated if there's more than one)
+- **SQLite needs a persistent disk.** On most platforms' free tiers the
+  filesystem is wiped on every restart/redeploy, which would silently erase
+  your equipment register. Attach a persistent volume/disk and point
+  `DATABASE_URL` at a path on it (e.g. `file:/data/dev.db` on Render, or a
+  Railway/Fly volume mount) — or plan to move to a hosted database (Postgres,
+  Turso, etc.) later if you outgrow this.
+- Note the deployed API's URL, e.g. `https://your-api.onrender.com`.
+
+**2. Client** (Vercel)
+- Root directory: `client/`
+- Framework preset: Vite (build command `npm run build`, output `dist`)
+- Environment variable: `VITE_API_URL=https://your-api.onrender.com/api`
+  (must include the `/api` suffix)
+- `client/vercel.json` already adds the SPA rewrite Vercel needs so client-side
+  routes (e.g. `/units/FL-01`) don't 404 on refresh.
+
+Once both are live, go back and set the server's `CORS_ORIGIN` to the
+Vercel URL Vercel gave you, and redeploy the server.
+
 ## Notes
 
 - Import (replacing the whole equipment register from a JSON backup) is

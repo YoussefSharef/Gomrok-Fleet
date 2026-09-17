@@ -7,7 +7,11 @@ import { vendorsRouter } from './routes/vendors.js';
 import { dataRouter } from './routes/data.js';
 
 const app = express();
-app.use(cors());
+// CORS_ORIGIN restricts cross-origin access to a specific deployed client
+// (e.g. https://your-app.vercel.app) in production. Left unset, all origins
+// are allowed, which is fine for local development.
+const corsOrigin = process.env.CORS_ORIGIN;
+app.use(cors(corsOrigin ? { origin: corsOrigin.split(',').map((o) => o.trim()) } : undefined));
 app.use(express.json());
 
 app.use('/api/auth', authRouter);
