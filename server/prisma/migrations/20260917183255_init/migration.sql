@@ -1,18 +1,16 @@
 -- CreateTable
 CREATE TABLE "Person" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
     "role" TEXT NOT NULL,
     "title" TEXT NOT NULL DEFAULT '',
     "pinHash" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "Person_pkey" PRIMARY KEY ("id")
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateTable
 CREATE TABLE "Unit" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "type" TEXT NOT NULL,
     "brand" TEXT NOT NULL DEFAULT '',
     "model" TEXT NOT NULL DEFAULT '',
@@ -40,15 +38,13 @@ CREATE TABLE "Unit" (
     "wo" TEXT,
     "cost" INTEGER,
     "quoted" INTEGER,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "Unit_pkey" PRIMARY KEY ("id")
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
 );
 
 -- CreateTable
 CREATE TABLE "ServiceEvent" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "unitId" TEXT NOT NULL,
     "date" TEXT NOT NULL,
     "kind" TEXT NOT NULL,
@@ -57,24 +53,22 @@ CREATE TABLE "ServiceEvent" (
     "vendor" TEXT NOT NULL DEFAULT '-',
     "wo" TEXT NOT NULL DEFAULT '-',
     "cost" INTEGER,
-
-    CONSTRAINT "ServiceEvent_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "ServiceEvent_unitId_fkey" FOREIGN KEY ("unitId") REFERENCES "Unit" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "Part" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "unitId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "qty" INTEGER NOT NULL DEFAULT 1,
     "cost" INTEGER NOT NULL DEFAULT 0,
-
-    CONSTRAINT "Part_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Part_unitId_fkey" FOREIGN KEY ("unitId") REFERENCES "Unit" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "Quote" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "unitId" TEXT NOT NULL,
     "company" TEXT NOT NULL,
     "scope" TEXT NOT NULL,
@@ -82,13 +76,12 @@ CREATE TABLE "Quote" (
     "lead" INTEGER NOT NULL DEFAULT 0,
     "note" TEXT NOT NULL DEFAULT '',
     "awarded" BOOLEAN NOT NULL DEFAULT false,
-
-    CONSTRAINT "Quote_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Quote_unitId_fkey" FOREIGN KEY ("unitId") REFERENCES "Unit" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "Vendor" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
     "covers" TEXT NOT NULL DEFAULT '',
     "contract" TEXT NOT NULL DEFAULT 'Annual contract',
@@ -100,9 +93,7 @@ CREATE TABLE "Vendor" (
     "since" INTEGER,
     "escalation" TEXT NOT NULL DEFAULT '',
     "turnaround" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "Vendor_pkey" PRIMARY KEY ("id")
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateIndex
@@ -125,12 +116,3 @@ CREATE INDEX "Quote_unitId_idx" ON "Quote"("unitId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Vendor_name_key" ON "Vendor"("name");
-
--- AddForeignKey
-ALTER TABLE "ServiceEvent" ADD CONSTRAINT "ServiceEvent_unitId_fkey" FOREIGN KEY ("unitId") REFERENCES "Unit"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Part" ADD CONSTRAINT "Part_unitId_fkey" FOREIGN KEY ("unitId") REFERENCES "Unit"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Quote" ADD CONSTRAINT "Quote_unitId_fkey" FOREIGN KEY ("unitId") REFERENCES "Unit"("id") ON DELETE CASCADE ON UPDATE CASCADE;
